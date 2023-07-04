@@ -5,10 +5,6 @@ from game import Directions
 import game
 from util import nearestPoint
 
-#################
-# Team creation #
-#################
-
 FIRST = 'Agent_A'
 SECOND = 'Agent_D'
 
@@ -16,22 +12,14 @@ DEBUG = False
 
 def createTeam(firstIndex, secondIndex, isRed, first=FIRST, second=SECOND):
   return [eval(first)(firstIndex), eval(second)(secondIndex)]
-
-##########
-# Agents #
-##########
-
 class ReflexCaptureAgent(CaptureAgent):
-  # A base class for reflex agents that chooses score-maximizing actions
   def registerInitialState(self, gameState):
     self.start = gameState.getAgentPosition(self.index)
     CaptureAgent.registerInitialState(self, gameState)
 
   def chooseAction(self, gameState):
     actions = gameState.getLegalActions(self.index)
-    # start = time.time()
     values = [self.evaluate(gameState, a) for a in actions]
-    # print 'eval time for agent %d: %.4f' % (self.index, time.time() - start)
 
     maxValue = max(values)
     bestActions = [a for a, v in zip(actions, values) if v == maxValue]
@@ -55,7 +43,6 @@ class ReflexCaptureAgent(CaptureAgent):
     successor = gameState.generateSuccessor(self.index, action)
     pos = successor.getAgentState(self.index).getPosition()
     if pos != nearestPoint(pos):
-      # Only half a grid position was covered
       return successor.generateSuccessor(self.index, action)
     else:
       return successor
@@ -100,20 +87,18 @@ class Agent_A(ReflexCaptureAgent):
     features = util.Counter()
     successor = self.getSuccessor(gameState, action)
     foodList = self.getFood(successor).asList()    
-    features['successorScore'] = -len(foodList)#self.getScore(successor)
+    features['successorScore'] = -len(foodList)
 
     agentState = gameState.getAgentState(self.index)
     numRetured = agentState.numReturned
     scaredTimer = agentState.scaredTimer
     myPos = agentState.getPosition()
     
-    # Compute distance to the nearest food
-    if len(foodList) > 0: # This should always be True,  but better safe than sorry
+    if len(foodList) > 0:
       myPos = successor.getAgentState(self.index).getPosition()
       minDistance = min([self.getMazeDistance(myPos, food) for food in foodList])
       features['distanceToFood'] = minDistance
 
-    # Ghosts
     enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
     invaders = [a for a in enemies if a.isPacman and a.getPosition() != None]
 
@@ -124,7 +109,7 @@ class Agent_A(ReflexCaptureAgent):
     if len(enemies) > 0:
       ghosts = [a.getPosition() for a in enemies if a.scaredTimer == 0]
       if len(ghosts) > 0:
-        minGhostDist = min([self.getMazeDistance(myPos, g) for g in ghosts]) # 주의: 둘 다 scared인 경우에 에러 남
+        minGhostDist = min([self.getMazeDistance(myPos, g) for g in ghosts])
         if minGhostDist < 4:
           features['GhostDist'] = minGhostDist*0.5
         else: features['GhostDist'] = minGhostDist
@@ -132,9 +117,7 @@ class Agent_A(ReflexCaptureAgent):
         if myPos in ghosts:
           features['dontgothere'] = -9999
 
-    # Capsule
-    capsules = self.getCapsules(gameState) # getCapsules(successor)
-    # minCapsuleDist, minCapsuleIndex = min(enumerate(capsules), key=lambda x: self.getMazeDistance(myPos, x[1]))
+    capsules = self.getCapsules(gameState)
     features['CapsuleDist'] = 0
     if len(capsules) > 0:
       if myPos in capsules:
@@ -156,17 +139,13 @@ class Agent_A(ReflexCaptureAgent):
             'dontgothere':1}
   
   def chooseAction(self, gameState):
-    # Picks among the actions with the highest Q(s,a).
     numCarrying = gameState.getAgentState(self.index).numCarrying
 
     carry = 2 if self.getScore(gameState)>2 else 1
     if numCarrying < carry:
       actions = gameState.getLegalActions(self.index)
 
-      # You can profile your evaluation time by uncommenting these lines
-      #start = time.time()
       values = [self.evaluate(gameState, a) for a in actions]
-      #print('eval time for agent %d: %.4f' % (self.index, time.time() - start))
       maxValue = max(values)
       bestActions = [a for a, v in zip(actions, values) if v == maxValue]
       foodLeft = len(self.getFood(gameState).asList())
@@ -184,13 +163,13 @@ class Agent_A(ReflexCaptureAgent):
       
       if DEBUG: print(values, actions)
       return random.choice(bestActions)
-    else: # go Home ground !!! !!!
+    else:
       self.target = self.getHomeTarget(gameState)
       action = self.gotoTarget(gameState, self.target)
       return action
     
   
-class Agent_D(ReflexCaptureAgent): # rather than weighting, simply return bfs path (action) to chase pacman
+class Agent_D(ReflexCaptureAgent):
     def getInvaders(self, gameState):
       enemies = [gameState.getAgentState(i) for i in self.getOpponents(gameState)]
       invaders = [e.getPosition() for e in enemies if e.isPacman and e.getPosition() != None]
