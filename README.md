@@ -23,5 +23,5 @@
 ## Assignments
 1. search
 2. multiAgent
-3. minicontest 1 - score 14/14
-4. minicontest 2 - score 29/30
+3. minicontest 1 - assignment score 14/14
+4. minicontest 2 - assignment score 29/30
